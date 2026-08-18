@@ -1,0 +1,7 @@
+{
+  "tracks": [
+    {"id": 1, "class": "vehicle", "confidence": 0.91, "first_seen": "00:00:02", "last_seen": "00:00:14", "flagged": false},
+    {"id": 2, "class": "personnel", "confidence": 0.87, "first_seen": "00:00:05", "last_seen": "00:00:20", "flagged": true},
+    {"id": 3, "class": "unknown", "confidence": 0.55, "first_seen": "00:00:09", "last_seen": "00:00:11", "flagged": true}
+  ]
+}
