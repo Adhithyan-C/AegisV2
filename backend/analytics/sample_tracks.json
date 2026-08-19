@@ -1,7 +1,70 @@
 {
+  "job_id": "demo-001",
+  "video_duration": "00:00:20",
   "tracks": [
-    {"id": 1, "class": "vehicle", "confidence": 0.91, "first_seen": "00:00:02", "last_seen": "00:00:14", "flagged": false},
-    {"id": 2, "class": "personnel", "confidence": 0.87, "first_seen": "00:00:05", "last_seen": "00:00:20", "flagged": true},
-    {"id": 3, "class": "unknown", "confidence": 0.55, "first_seen": "00:00:09", "last_seen": "00:00:11", "flagged": true}
+    {
+      "id": 1,
+      "class": "vehicle",
+      "confidence": 0.91,
+      "first_seen": 42,
+      "last_seen": 310,
+      "flagged": false,
+      "positions": [
+        {"frame": 42, "timestamp": "00:00:01.400", "x": 512, "y": 380},
+        {"frame": 90, "timestamp": "00:00:03.000", "x": 540, "y": 372},
+        {"frame": 150, "timestamp": "00:00:05.000", "x": 580, "y": 360},
+        {"frame": 310, "timestamp": "00:00:10.333", "x": 650, "y": 340}
+      ]
+    },
+    {
+      "id": 2,
+      "class": "personnel",
+      "confidence": 0.87,
+      "first_seen": 60,
+      "last_seen": 420,
+      "flagged": false,
+      "positions": [
+        {"frame": 60, "timestamp": "00:00:02.000", "x": 200, "y": 500},
+        {"frame": 200, "timestamp": "00:00:06.666", "x": 230, "y": 480},
+        {"frame": 420, "timestamp": "00:00:14.000", "x": 260, "y": 460}
+      ]
+    },
+    {
+      "id": 3,
+      "class": "unknown",
+      "confidence": 0.35,
+      "first_seen": 100,
+      "last_seen": 130,
+      "flagged": true,
+      "positions": [
+        {"frame": 100, "timestamp": "00:00:03.333", "x": 800, "y": 220},
+        {"frame": 130, "timestamp": "00:00:04.333", "x": 810, "y": 225}
+      ]
+    },
+    {
+      "id": 4,
+      "class": "vehicle",
+      "confidence": 0.78,
+      "first_seen": 150,
+      "last_seen": 500,
+      "flagged": true,
+      "positions": [
+        {"frame": 150, "timestamp": "00:00:05.000", "x": 400, "y": 600},
+        {"frame": 300, "timestamp": "00:00:10.000", "x": 420, "y": 590},
+        {"frame": 500, "timestamp": "00:00:16.666", "x": 450, "y": 580}
+      ]
+    }
+  ],
+  "counts": {"vehicle": 2, "personnel": 1, "unknown": 1},
+  "events": [
+    {"track_id": 1, "type": "TRACK_CREATED", "frame": 42, "timestamp": "00:00:01.400"},
+    {"track_id": 2, "type": "TRACK_CREATED", "frame": 60, "timestamp": "00:00:02.000"},
+    {"track_id": 3, "type": "TRACK_CREATED", "frame": 100, "timestamp": "00:00:03.333"},
+    {"track_id": 3, "type": "FLAGGED", "frame": 100, "timestamp": "00:00:03.333", "reason": "low_confidence"},
+    {"track_id": 3, "type": "TRACK_LOST", "frame": 130, "timestamp": "00:00:04.333"},
+    {"track_id": 4, "type": "TRACK_CREATED", "frame": 150, "timestamp": "00:00:05.000"},
+    {"track_id": 4, "type": "FLAGGED", "frame": 300, "timestamp": "00:00:10.000", "reason": "low_confidence"},
+    {"track_id": 4, "type": "TRACK_LOST", "frame": 480, "timestamp": "00:00:16.000"},
+    {"track_id": 4, "type": "TRACK_REAPPEARED", "frame": 500, "timestamp": "00:00:16.666"}
   ]
 }

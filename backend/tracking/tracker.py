@@ -12,10 +12,23 @@ class AegisTracker:
 
         self.tracker = sv.ByteTrack()
 
-        self.box_annotator = sv.BoxAnnotator()
-        self.label_annotator = sv.LabelAnnotator()
+        self.box_annotator = sv.BoxAnnotator(
+            thickness = 3
+        )
+        self.label_annotator = sv.LabelAnnotator(
+            text_scale = 1.0,
+            text_thickness = 2,
+            text_padding = 8
+        )
 
         self.tracks = {}
+        self.events = []
+        self.active_track_ids = set()
+
+        self.lost_track_buffer = 30
+        self.lost_tracks = {}
+
+        self.confidence_threshold = 0.4
 
     def process_frame(self, frame, frame_number, fps):
         # Run YOLO
@@ -26,11 +39,15 @@ class AegisTracker:
 
         detections = self.tracker.update_with_detections(detections)
 
+        current_track_ids = set()
+
         # Store information about each active track
         if detections.tracker_id is not None:
             for i, tracker_id in enumerate(detections.tracker_id):
 
                 tracker_id = int(tracker_id)
+
+                current_track_ids.add(tracker_id)
 
                 class_id = int(detections.class_id[i])
                 class_name = self.model.names[class_id]
@@ -69,6 +86,54 @@ class AegisTracker:
                     "x": x,
                     "y": y
                 })
+
+                if confidence < self.confidence_threshold:
+                    if not track["flagged"]:
+                        track["flagged"] = True
+                        self.events.append({
+                            "track_id": tracker_id,
+                            "type": "FLAGGED",
+                            "timestamp": format_timestamp(frame_number / fps),
+                            "reason": "low_confidence"
+                        })
+
+        # Detect newly created tracks
+        for tracker_id in current_track_ids:
+            if tracker_id not in self.active_track_ids:
+                self.events.append({
+                    "track_id": tracker_id,
+                    "type": "TRACK_CREATED",
+                    "timestamp": format_timestamp(frame_number / fps),
+                    "reason": None
+                })
+
+        # Detect tracks that disappeared
+        for tracker_id in self.active_track_ids:
+            if tracker_id not in current_track_ids:
+                if tracker_id not in self.lost_tracks:
+                    self.lost_tracks[tracker_id] = frame_number
+
+        for tracker_id in list(self.lost_tracks.keys()):
+            lost_for = frame_number - self.lost_tracks[tracker_id]
+            if tracker_id in current_track_ids:
+                self.events.append({
+                    "track_id": tracker_id,
+                    "type": "TRACK_REAPPEARED",
+                    "timestamp": format_timestamp(frame_number / fps),
+                    "reason": None
+                })
+                del self.lost_tracks[tracker_id]
+            elif lost_for >= self.lost_track_buffer:
+                self.events.append({
+                    "track_id": tracker_id,
+                    "type": "TRACK_LOST",   
+                    "timestamp": format_timestamp(frame_number / fps),
+                    "reason": None
+                })
+                del self.lost_tracks[tracker_id]
+
+        # Remember this frame's IDs for the next frame
+        self.active_track_ids = current_track_ids
 
         # Create labels
         labels = []
@@ -210,6 +275,15 @@ def main():
     cv2.destroyAllWindows()
 
     tracks = tracker.get_track_results()
+
+    print(f"Events: {len(tracker.events)}")
+
+    for event in tracker.events:
+        print(
+            f"{event['timestamp']} | "
+            f"{event['type']} | "
+            f"ID {event['track_id']}"
+        )
 
     print(f"Tracked objects: {len(tracks)}")
 
