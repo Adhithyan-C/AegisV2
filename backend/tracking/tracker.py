@@ -136,18 +136,20 @@ def format_timestamp(seconds):
 
 def main():
     parser = argparse.ArgumentParser()
+    source = "test_video.mp4"
+    output = "tracked_output.mp4"
 
-    parser.add_argument(
-        "--source",
-        required=True,
-        help="Path to input video",
-    )
+    # parser.add_argument(
+    #     "--source",
+    #     required=True,
+    #     help="Path to input video",
+    # )
 
-    parser.add_argument(
-        "--output",
-        required=True,
-        help="Path to output video",
-    )
+    # parser.add_argument(
+    #     "--output",
+    #     required=True,
+    #     help="Path to output video",
+    # )
 
     parser.add_argument(
         "--model",
@@ -159,11 +161,11 @@ def main():
 
     tracker = AegisTracker(args.model)
 
-    cap = cv2.VideoCapture(args.source)
+    cap = cv2.VideoCapture(source)
 
     if not cap.isOpened():
         raise RuntimeError(
-            f"Could not open video: {args.source}"
+            f"Could not open video: {source}"
         )
 
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -177,7 +179,7 @@ def main():
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
     writer = cv2.VideoWriter(
-        args.output,
+        output,
         fourcc,
         fps,
         (width, height),
@@ -220,7 +222,7 @@ def main():
         )
 
     print(f"Processed {frame_number} frames.")
-    print(f"Output saved to: {args.output}")
+    print(f"Output saved to: {output}")
 
 
 if __name__ == "__main__":
