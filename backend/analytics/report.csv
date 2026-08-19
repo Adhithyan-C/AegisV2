@@ -1,0 +1,4 @@
+id,class,confidence,first_seen,last_seen,flagged
+1,vehicle,0.91,00:00:02,00:00:14,False
+2,personnel,0.87,00:00:05,00:00:20,True
+3,unknown,0.55,00:00:09,00:00:11,True
