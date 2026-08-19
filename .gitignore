@@ -1,2 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+backend/api/uploads/
 *.mp4
 /venv
