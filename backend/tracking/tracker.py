@@ -4,12 +4,11 @@
 import argparse
 import cv2
 import supervision as sv
+import numpy as np
 from ultralytics import YOLO
 
 class AegisTracker:
-    def __init__(self, model_path="yolov8n.pt"):
-        self.model = YOLO(model_path)
-
+    def __init__(self):
         self.tracker = sv.ByteTrack()
 
         self.box_annotator = sv.BoxAnnotator(
@@ -30,16 +29,45 @@ class AegisTracker:
 
         self.confidence_threshold = 0.4
 
-    def process_frame(self, frame, frame_number, fps):
-        # Run YOLO
-        result = self.model(frame, verbose=False)[0]
+        self.zone_status = {}
 
-        # Convert YOLO detections to Supervision format
-        detections = sv.Detections.from_ultralytics(result)
+        self.CLASS_NAMES = {
+            0: "vehicle",
+            1: "personnel",
+            2: "unknown"
+        }
 
-        detections = self.tracker.update_with_detections(detections)
-
+    def process_detections(self, frame, p1_detections, frame_number, fps, zone):
         current_track_ids = set()
+
+        if p1_detections:
+            xyxy = np.array(
+                [d["bbox"] for d in p1_detections],
+                dtype=np.float32
+            )
+
+            confidence = np.array(
+                [d["confidence"] for d in p1_detections],
+                dtype=np.float32
+            )
+
+            class_id = np.array(
+                [d["class_id"] for d in p1_detections],
+                dtype=int
+            )
+
+            detections = sv.Detections(
+                xyxy=xyxy,
+                confidence=confidence,
+                class_id=class_id
+            )
+
+        else:
+            detections = sv.Detections.empty()
+
+        detections = self.tracker.update_with_detections(
+            detections
+        )
 
         # Store information about each active track
         if detections.tracker_id is not None:
@@ -50,7 +78,7 @@ class AegisTracker:
                 current_track_ids.add(tracker_id)
 
                 class_id = int(detections.class_id[i])
-                class_name = self.model.names[class_id]
+                class_name = self.CLASS_NAMES.get(class_id, "unknown")
                 confidence = float(detections.confidence[i])
 
                 # Bounding box
@@ -67,16 +95,23 @@ class AegisTracker:
                         "class": class_name,
                         "confidence_sum": 0.0,
                         "detection_count": 0,
-                        "first_seen": frame_number,
-                        "last_seen": frame_number,
+                        "first_seen": format_timestamp(frame_number / fps),
+                        "last_seen": format_timestamp(frame_number / fps),
                         "flagged": False,
                         "positions": []
                     }
 
+                    self.events.append({
+                        "track_id": tracker_id,
+                        "type": "TRACK_CREATED",
+                        "timestamp": format_timestamp(frame_number / fps),
+                        "reason": None
+                    })
+
                 track = self.tracks[tracker_id]
 
                 # Update track information
-                track["last_seen"] = frame_number
+                track["last_seen"] = format_timestamp(frame_number / fps)
                 track["confidence_sum"] += confidence
                 track["detection_count"] += 1
 
@@ -97,15 +132,45 @@ class AegisTracker:
                             "reason": "low_confidence"
                         })
 
-        # Detect newly created tracks
-        for tracker_id in current_track_ids:
-            if tracker_id not in self.active_track_ids:
-                self.events.append({
-                    "track_id": tracker_id,
-                    "type": "TRACK_CREATED",
-                    "timestamp": format_timestamp(frame_number / fps),
-                    "reason": None
-                })
+                # Check whether the track is inside the zone
+                inside_zone = (
+                    cv2.pointPolygonTest(
+                        zone,
+                        (x, y),
+                        False
+                    ) >= 0
+                )
+                
+                previously_inside = self.zone_status.get(
+                    tracker_id,
+                    False
+                )
+                
+                if inside_zone and not previously_inside:
+                    self.events.append({
+                        "track_id": tracker_id,
+                        "type": "ZONE_ENTER",
+                                "timestamp": format_timestamp(frame_number / fps),
+                        "reason": "restricted_zone"
+                    })
+                    if not track["flagged"]:
+                        track["flagged"] = True
+                
+                        self.events.append({
+                            "track_id": tracker_id,
+                            "type": "FLAGGED",
+                            "timestamp": format_timestamp(frame_number / fps),
+                            "reason": "restricted_zone"
+                        })
+                elif not inside_zone and previously_inside:
+                    self.events.append({
+                        "track_id": tracker_id,
+                        "type": "ZONE_EXIT",
+                        "timestamp": format_timestamp(frame_number / fps),
+                        "reason": "restricted_zone"
+                    })
+                
+                self.zone_status[tracker_id] = inside_zone
 
         # Detect tracks that disappeared
         for tracker_id in self.active_track_ids:
@@ -131,6 +196,7 @@ class AegisTracker:
                     "reason": None
                 })
                 del self.lost_tracks[tracker_id]
+                del self.zone_status[tracker_id]
 
         # Remember this frame's IDs for the next frame
         self.active_track_ids = current_track_ids
@@ -144,7 +210,10 @@ class AegisTracker:
                 detections.confidence,
                 detections.tracker_id,
             ):
-                class_name = self.model.names[int(class_id)]
+                class_name = self.CLASS_NAMES.get(
+                    int(class_id),
+                    "unknown"
+                )
 
                 labels.append(
                     f"ID {tracker_id} | "
@@ -192,6 +261,59 @@ class AegisTracker:
 
         return results
 
+    def get_counts(self):
+        counts = {
+            "vehicle": 0,
+            "personnel": 0,
+            "unknown": 0
+        }
+        for track in self.tracks.values():
+            class_name = track["class"]
+            if class_name in counts:
+                counts[class_name] += 1
+        return counts
+
+    def get_results(self):
+        return {
+            "tracks": self.get_track_results(),
+            "counts": self.get_counts(),
+            "events": self.events
+        }
+
+def temp_P1_sim(detector, frame):
+    # Temporary P1 simulation
+    result = detector(frame, verbose=False)[0]
+
+    p1_detections = []
+
+    vehicle_classes = {2, 3, 5, 7}  # car, motorcycle, bus, truck
+    personnel_classes = {0}        # person
+
+    for box in result.boxes:
+        x1, y1, x2, y2 = box.xyxy[0].tolist()
+
+        coco_class_id = int(box.cls[0])
+        confidence = float(box.conf[0])
+
+        if coco_class_id in vehicle_classes:
+            class_id = 0
+            class_name = "vehicle"
+        elif coco_class_id in personnel_classes:
+            class_id = 1
+            class_name = "personnel"
+        else:
+            class_id = 2
+            class_name = "unknown"
+
+        p1_detections.append({
+            "bbox": [x1, y1, x2, y2],
+            "class_id": class_id,
+            "class_name": class_name,
+            "confidence": confidence
+        })
+
+    return p1_detections
+
 def format_timestamp(seconds):
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
@@ -216,15 +338,16 @@ def main():
     #     help="Path to output video",
     # )
 
-    parser.add_argument(
-        "--model",
-        default="yolov8n.pt",
-        help="YOLO model path",
-    )
+    # parser.add_argument(
+    #     "--model",
+    #     default="yolov8n.pt",
+    #     help="YOLO model path",
+    # )
 
     args = parser.parse_args()
 
-    tracker = AegisTracker(args.model)
+    detector = YOLO("yolov8n.pt")
+    tracker = AegisTracker()
 
     cap = cv2.VideoCapture(source)
 
@@ -252,6 +375,13 @@ def main():
 
     frame_number = 0
 
+    zone = np.array([
+        [1530, 570],   # top-left
+        [1645, 575],   # top-right
+        [1645, 925],   # bottom-right
+        [1500, 925]    # bottom-left
+    ], dtype=np.int32)
+
     while True:
         success, frame = cap.read()
 
@@ -260,7 +390,16 @@ def main():
 
         frame_number += 1
 
-        annotated = tracker.process_frame(frame, frame_number, fps)
+        p1_detections = temp_P1_sim(detector, frame)
+
+        annotated = tracker.process_detections(frame, p1_detections, frame_number, fps, zone)
+        cv2.polylines(
+            annotated,
+            [zone],
+            isClosed=True,
+            color=(0, 0, 255),
+            thickness=3
+        )
 
         writer.write(annotated)
 
