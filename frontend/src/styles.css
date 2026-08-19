@@ -1,0 +1,162 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * AEGIS design system — dark command-center theme.
+ * All colors are oklch semantic tokens. Never hardcode colors in components.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-panel: var(--panel);
+  --color-surface: var(--surface);
+  --color-ops: var(--ops);
+  --color-ops-foreground: var(--ops-foreground);
+  --color-warn: var(--warn);
+  --color-warn-foreground: var(--warn-foreground);
+  --color-critical: var(--critical);
+  --color-critical-foreground: var(--critical-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-display: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --radius: 0.375rem;
+  --background: oklch(0.14 0.018 260);
+  --foreground: oklch(0.94 0.006 250);
+  --card: oklch(0.18 0.016 265);
+  --card-foreground: oklch(0.94 0.006 250);
+  --panel: oklch(0.20 0.015 268);
+  --surface: oklch(0.16 0.014 262);
+  --popover: oklch(0.18 0.016 265);
+  --popover-foreground: oklch(0.94 0.006 250);
+  --primary: oklch(0.70 0.18 310);
+  --primary-foreground: oklch(0.97 0.01 310);
+  --secondary: oklch(0.26 0.02 270);
+  --secondary-foreground: oklch(0.94 0.006 250);
+  --muted: oklch(0.24 0.015 270);
+  --muted-foreground: oklch(0.62 0.012 260);
+  --accent: oklch(0.68 0.15 200);
+  --accent-foreground: oklch(0.16 0.02 200);
+  --destructive: oklch(0.60 0.22 20);
+  --destructive-foreground: oklch(0.97 0.01 20);
+  --border: oklch(0.28 0.016 265);
+  --input: oklch(0.22 0.016 265);
+  --ring: oklch(0.70 0.18 310);
+  --ops: oklch(0.68 0.15 200);
+  --ops-foreground: oklch(0.16 0.02 200);
+  --warn: oklch(0.78 0.15 70);
+  --warn-foreground: oklch(0.20 0.05 60);
+  --critical: oklch(0.60 0.22 20);
+  --critical-foreground: oklch(0.97 0.01 20);
+  --info: oklch(0.68 0.14 250);
+  --info-foreground: oklch(0.16 0.02 250);
+  --chart-1: oklch(0.70 0.18 310);
+  --chart-2: oklch(0.78 0.15 70);
+  --chart-3: oklch(0.60 0.22 20);
+  --chart-4: oklch(0.68 0.15 200);
+  --chart-5: oklch(0.62 0.012 260);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    background-image:
+      linear-gradient(oklch(1 0 0 / 2.5%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(1 0 0 / 2.5%) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+}
+
+@utility panel-glass {
+  background-color: color-mix(in oklab, var(--panel) 65%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@utility card-glass {
+  background-color: color-mix(in oklab, var(--card) 60%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@utility glass-sm {
+  background-color: color-mix(in oklab, var(--surface) 55%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 40%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Hide Lovable branding and watermarks */
+[data-lovable-branding],
+[data-lovable-watermark],
+.lovable-branding,
+.lovable-watermark,
+[class*="lovable"],
+[id*="lovable"] {
+  display: none !important;
+}
+
+/* Hide Lovable iframe overlays */
+iframe[src*="lovable"],
+iframe[src*="vercel"] {
+  display: none !important;
+}
